@@ -3,9 +3,12 @@ import THREE from 'three.js'
 import THREEx from 'threex.windowresize'
 
 import Blocker from './components/Blocker/Blocker'
+import './components/Map/Map'
 import lockPointer from './components/PointerLockControls/PointerLockControls'
 
 import './css/main.css'
+
+import heightmapTexture from './textures/heightmap.jpg'
 
 const FOV = 75,
     ANGLE = window.innerWidth / window.innerHeight,
@@ -113,6 +116,16 @@ function init() {
     camera.add(crosshairLineVertical);
     crosshairLineVertical.position.z = -10;
     
+    let heightmap = new Image();
+    heightmap.onload = function () {
+        let objects = THREE.ImgToMap(this, heightmap.width);
+        for (let i = 0; i < objects.length; i++) {
+            scene.add(objects[i]);
+            objects[i].position.y = 10;
+        }
+    };
+    heightmap.src = heightmapTexture;
+
     body.append(renderer.domElement);
     windowResize = new THREEx.WindowResize(renderer, camera);
 }
