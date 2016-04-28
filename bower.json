@@ -1,8 +1,24 @@
 {
-  "name": "temp",
-  "version": "0.0.0",
+  "name": "labyrinth",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "quirk0o"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
   "dependencies": {
-    "threejs": ""
+    "threex.colliders": "*",
+    "jquery": "^2.2.3",
+    "three.js": "threejs#*",
+    "threex.windowresize": "*",
+    "threex.skymap": "*"
   }
 }
-
