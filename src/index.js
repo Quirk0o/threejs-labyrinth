@@ -2,6 +2,8 @@ import $ from 'jquery'
 import THREE from 'three.js'
 import THREEx from 'threex.windowresize'
 
+import Blocker from './components/Blocker/Blocker'
+import lockPointer from './components/PointerLockControls/PointerLockControls'
 
 import './css/main.css'
 
@@ -14,10 +16,16 @@ let windowResize;
 
 let scene, camera, renderer;
 let light, secondaryLight, ray;
+let controls, time = Date.now();
 let floor;
 
-init()
-animate()
+const body = $("body");
+const blocker = new Blocker();
+blocker.render();
+body.prepend(blocker.el);
+
+init();
+animate();
 
 function init() {
 
@@ -31,6 +39,17 @@ function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0xffffff);
+
+    controls = new THREE.PointerLockControls(camera);
+    scene.add(controls.getObject());
+
+    lockPointer(blocker)
+        .then(function () {
+            controls.enabled = true;
+        })
+        .catch(function () {
+            controls.enabled = false;
+        });
 
     light = new THREE.DirectionalLight(0xf9bd62, 1.5);
     light.position.set(1, 1, 1);
@@ -102,6 +121,14 @@ function animate() {
 
     requestAnimationFrame(animate);
 
+    controls.isOnObject(false);
+
+    ray.ray.origin.copy(controls.getObject().position);
+    ray.ray.origin.y -= 10;
+
+    controls.update(Date.now() - time);
+
     renderer.render(scene, camera);
 
+    time = Date.now();
 }
