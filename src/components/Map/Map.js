@@ -21,7 +21,7 @@ function getPixelData(img) {
 
     let j = 0;
     for (let i = 0; i < pix.length; i += 4) {
-        data[j++] = (pix[i] + pix[i + 1] + pix[i + 2])/3/255;
+        data[j++] = (pix[i + 1] + pix[i + 2] + pix[i + 3])/255;
     }
 
     return data;
@@ -29,30 +29,110 @@ function getPixelData(img) {
 
 THREE.ImgToMap = function (img) {
     const imgData = getPixelData(img);
-    
-    let objects = [];
 
-    let x = 0, z = 0;
-    for (let i = 0; i < imgData.length; i++, x += 10) {
-        
-        if (imgData[i] > 0.5) {
-            let geometry = new THREE.BoxGeometry(10, 40, 10);
-            let material = new THREE.MeshBasicMaterial({color: 0x000000});
-            let cube = new THREE.Mesh(geometry, material);
-            cube.position.x = x;
-            cube.position.z = z;
+    for (var i = 0; i < imgData.length, imgData[i] < 0.5; i++);
+    return createWallGeometry(iToP(i));
 
-            objects.push(cube);
+    function createWallGeometry(root) {
+
+        let points = [];
+        let walls = [];
+        deactivate(root);
+        for (let i = 0; i < 4; i++) {
+            let next = nextPoint(root, i);
+            if (next && isActive(next)) {
+                points.push({a: root, b: next});
+            }
         }
 
-        if (i % img.width == 0) {
-            z += 10;
-            x = 0;
+        while (points.length > 0) {
+            let {a, b} = points.pop();
+            deactivate(b);
+            let next = nextPoint(a, b);
+            if (next && isActive(next)) {
+                points.push({a, b: next});
+            }
+            else
+                walls.push({a, b});
+
+            let indices;
+            if (a.x == b.x)
+                indices = [1, 3];
+            if (a.y == b.y)
+                indices = [0, 2];
+
+            indices.forEach((i) => {
+                let next = nextPoint(b, i);
+                if (next && isActive(next))
+                    points.push({a: b, b: next});
+            });
         }
+
+        let objects = [];
+        walls.forEach((wall) => {
+            let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 10 : 20;
+            let heigth = 40;
+            let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 10: 20;
+           objects.push(createObject(width, heigth, depth, wall.a.x, wall.a.y));
+        });
+        return objects;
     }
 
-    return objects;
+    function isActive(point) {
+        return imgData[pToI(point)] > 0.5;
+    }
+
+    function deactivate(point) {
+        imgData[pToI(point)] = 0;
+    }
+
+    function iToP(i) {
+        let x = Math.floor(i / img.width);
+        let y = i - x * img.width;
+        return {x, y};
+    }
+
+    function pToI(p) {
+        return p.x * img.width + p.y;
+    }
+
+    function nextPoint(a, b) {
+        let point;
+        if (b.x !== undefined) {
+            if (b.x > a.x)
+                point = {x: b.x + 1, y: b.y};
+            else if (b.y > a.y)
+                point = {x: b.x, y: b.y + 1};
+            else if (a.x > b.x)
+                point = {x: b.x - 1, y: b.y};
+            else if (a.y > b.y)
+                point = {x: b.x, y: b.y - 1};
+        } else {
+            if (b == 0)
+                point = {x: a.x, y: a.y + 1};
+            else if (b == 1)
+                point = {x: a.x + 1, y: a.y};
+            else if (b == 2)
+                point = {x: a.x, y: a.y - 1};
+            else if (b == 3)
+                point = {x: a.x - 1, y: a.y};
+        }
+
+        if (point.x >= 0 && point.y >= 0 && point.x < img.height && point.y < img.width)
+            return point;
+        else return null;
+    }
 };
+
+function createObject(width, height, depth, row, col) {
+    console.log(width, height, depth, row, col);
+    let geometry = new THREE.BoxGeometry(width, height, depth);
+    let material = new THREE.MeshBasicMaterial({color: 0x000000});
+    let cube = new THREE.Mesh(geometry, material);
+    cube.position.x = col * 10;
+    cube.position.z = row * 10;
+    return cube;
+}
 
 export default THREE.ImgToMap;
 

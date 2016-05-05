@@ -8,7 +8,7 @@ import lockPointer from './components/PointerLockControls/PointerLockControls'
 
 import './css/main.css'
 
-import heightmapTexture from './textures/heightmap.jpg'
+import heightmapTexture from './textures/heightmap.png'
 
 const FOV = 75,
     ANGLE = window.innerWidth / window.innerHeight,
@@ -36,7 +36,7 @@ function init() {
     scene.fog = new THREE.Fog(0xffffff);
 
     camera = new THREE.PerspectiveCamera(FOV, ANGLE, NEAR, FAR);
-    camera.position.set(0, 10, 0);
+    camera.position.set(0, 500, 0);
     camera.rotation.set(Math.PI, 0, Math.PI);
 
     renderer = new THREE.WebGLRenderer();
@@ -115,13 +115,15 @@ function init() {
     var crosshairLineVertical = new THREE.Line(lineGeometry, lineMaterial);
     camera.add(crosshairLineVertical);
     crosshairLineVertical.position.z = -10;
-    
+
     let heightmap = new Image();
     heightmap.onload = function () {
-        let objects = THREE.ImgToMap(this, heightmap.width);
+        let objects = THREE.ImgToMap(this);
         for (let i = 0; i < objects.length; i++) {
+            console.log(objects[i]);
             scene.add(objects[i]);
             objects[i].position.y = 10;
+            console.log(objects);
         }
     };
     heightmap.src = heightmapTexture;
