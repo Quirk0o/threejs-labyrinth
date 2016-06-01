@@ -69,11 +69,17 @@ THREE.ImgToMap = function (img) {
         }
 
         let objects = [];
+        walls = walls.map(wall => {
+            let a = { x: wall.a.y, y: wall.a.x };
+            let b = { x: wall.b.y, y: wall.b.x };
+            return { a, b };
+        });
         walls.forEach((wall) => {
-            let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 10 : 20;
+            let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 20 : 20;
             let heigth = 40;
-            let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 10: 20;
-           objects.push(createObject(width, heigth, depth, wall.a.x, wall.a.y));
+            let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 20: 20;
+            let vec = { x: (wall.a.x - wall.b.x)/2, y: (wall.a.y - wall.b.y)/2 };
+           objects.push(createObject(width, heigth, depth, wall.a.x - vec.x, wall.a.y - vec.y));
         });
         return objects;
     }
@@ -124,13 +130,12 @@ THREE.ImgToMap = function (img) {
     }
 };
 
-function createObject(width, height, depth, row, col) {
-    console.log(width, height, depth, row, col);
+function createObject(width, height, depth, x, z) {
     let geometry = new THREE.BoxGeometry(width, height, depth);
     let material = new THREE.MeshBasicMaterial({color: 0x000000});
     let cube = new THREE.Mesh(geometry, material);
-    cube.position.x = col * 10;
-    cube.position.z = row * 10;
+    cube.position.x = x * 10;
+    cube.position.z = z * 10;
     return cube;
 }
 

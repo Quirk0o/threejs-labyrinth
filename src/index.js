@@ -36,8 +36,7 @@ function init() {
     scene.fog = new THREE.Fog(0xffffff);
 
     camera = new THREE.PerspectiveCamera(FOV, ANGLE, NEAR, FAR);
-    camera.position.set(0, 500, 0);
-    camera.rotation.set(Math.PI, 0, Math.PI);
+    camera.position.set(0, 0, 300);
 
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -116,17 +115,19 @@ function init() {
     camera.add(crosshairLineVertical);
     crosshairLineVertical.position.z = -10;
 
+    let map = new THREE.Group();
     let heightmap = new Image();
     heightmap.onload = function () {
         let objects = THREE.ImgToMap(this);
         for (let i = 0; i < objects.length; i++) {
-            console.log(objects[i]);
-            scene.add(objects[i]);
-            objects[i].position.y = 10;
-            console.log(objects);
+            map.add(objects[i]);
+            objects[i].position.y = 20;
         }
     };
     heightmap.src = heightmapTexture;
+    map.position.set(-500, 0, -500);
+
+    scene.add(map);
 
     body.append(renderer.domElement);
     windowResize = new THREEx.WindowResize(renderer, camera);
