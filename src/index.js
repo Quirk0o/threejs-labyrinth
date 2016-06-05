@@ -3,6 +3,10 @@ import THREE from 'three.js'
 import THREEx from 'threex.windowresize'
 import KeyboardState from './components/TrackballControls/THREEx.KeyboardState'
 import './components/OrbitControls/OrbitControls'
+import './loaders/collada/ColladaLoader'
+import './loaders/collada/Animation'
+import './loaders/collada/AnimationHandler'
+import './loaders/collada/KeyFrameAnimation'
 import './lib/physi.js'
 
 Physijs.scripts.worker = 'physijs_worker.js';
@@ -14,6 +18,7 @@ import './css/main.css'
 
 import heightmapTextureFile from './textures/heightmap.png'
 import floorTextureFile from './textures/wood-2.jpg'
+import modelFile from './models/idle/idle.dae'
 
 const FOV = 75,
     ANGLE = window.innerWidth / window.innerHeight,
@@ -124,6 +129,32 @@ function init() {
     };
 
     heightmap.src = heightmapTextureFile;
+
+    var loader = new THREE.ColladaLoader();
+
+    loader.load(
+        // resource URL
+        modelFile,
+        // Function when resource is loaded
+        function ( collada ) {
+            var dae = collada.scene;
+            dae.traverse( function ( child ) {
+                if ( child instanceof THREE.SkinnedMesh ) {
+                    var animation = new THREE.Animation( child, child.geometry.animation );
+                    animation.play();
+                }
+            } );
+            dae.scale.x = dae.scale.y = dae.scale.z = 0.002;
+            dae.updateMatrix();
+
+            scene.add( dae );
+            dae.position.set(0, 0, -100);
+        },
+        // Function called when download progresses
+        function ( xhr ) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+        }
+    );
 
     let cubeGeometry = new THREE.CubeGeometry(10, 10, 10);
     let cubeMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x0000ff }));
