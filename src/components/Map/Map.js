@@ -1,4 +1,6 @@
 import THREE from 'three.js'
+// const Physijs = require('physijs-browserify')(THREE);
+import THREEx from 'threex.colliders';
 
 function getPixelData(img) {
 
@@ -136,6 +138,11 @@ function createObject(width, height, depth, x, z) {
     let cube = new THREE.Mesh(geometry, material);
     cube.position.x = x * 10;
     cube.position.z = z * 10;
+    cube.geometry.computeBoundingBox();
+    let box = cube.geometry.boundingBox.clone();
+    cube.collider = new THREEx.ColliderBox3(cube, box);
+    cube.collider.updateMode = 'none';
+    cube.castShadow = true;
     return cube;
 }
 

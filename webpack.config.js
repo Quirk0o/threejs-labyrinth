@@ -43,5 +43,6 @@ module.exports = {
         contentBase: "./dist",
         progress: true,
         colors: true
-    }
+    },
+    devtool: 'source-map'
 };
