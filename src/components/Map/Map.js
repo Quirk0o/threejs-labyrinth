@@ -1,6 +1,6 @@
 import THREE from 'three.js'
-// const Physijs = require('physijs-browserify')(THREE);
-import THREEx from 'threex.colliders';
+import '../../lib/physi'
+// import THREEx from 'threex.colliders';
 
 function getPixelData(img) {
 
@@ -78,7 +78,7 @@ THREE.ImgToMap = function (img) {
         });
         walls.forEach((wall) => {
             let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 20 : 20;
-            let heigth = 40;
+            let heigth = 80;
             let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 20: 20;
             let vec = { x: (wall.a.x - wall.b.x)/2, y: (wall.a.y - wall.b.y)/2 };
            objects.push(createObject(width, heigth, depth, wall.a.x - vec.x, wall.a.y - vec.y));
@@ -134,14 +134,14 @@ THREE.ImgToMap = function (img) {
 
 function createObject(width, height, depth, x, z) {
     let geometry = new THREE.BoxGeometry(width, height, depth);
-    let material = new THREE.MeshBasicMaterial({color: 0x000000});
-    let cube = new THREE.Mesh(geometry, material);
+    let material = Physijs.createMaterial(
+        new THREE.MeshBasicMaterial({color: 0x000000}),
+        .8,
+        .3);
+    let cube = new Physijs.BoxMesh(geometry, material, 0);
     cube.position.x = x * 10;
     cube.position.z = z * 10;
-    cube.geometry.computeBoundingBox();
-    let box = cube.geometry.boundingBox.clone();
-    cube.collider = new THREEx.ColliderBox3(cube, box);
-    cube.collider.updateMode = 'none';
+    cube._dirtyPosition = true;
     cube.castShadow = true;
     return cube;
 }

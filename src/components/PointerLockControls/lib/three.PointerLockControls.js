@@ -3,6 +3,7 @@
  */
 
 import THREE from 'three.js'
+import '../../../lib/physi'
 
 export default THREE.PointerLockControls = function ( camera ) {
 
@@ -13,8 +14,14 @@ export default THREE.PointerLockControls = function ( camera ) {
 	var pitchObject = new THREE.Object3D();
 	pitchObject.add( camera );
 
-	var yawObject = new THREE.Object3D();
-	yawObject.position.y = 10;
+    // var yawObject = new THREE.Object3D();
+	var yawObject = new Physijs.BoxMesh(
+        new THREE.CubeGeometry(10, 10, 10),
+        Physijs.createMaterial(
+            new THREE.MeshBasicMaterial({ transparent: true })),
+        100
+    );
+	yawObject.position.y = 50;
 	yawObject.add( pitchObject );
 
 	var moveForward = false;
@@ -36,7 +43,8 @@ export default THREE.PointerLockControls = function ( camera ) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		yawObject.rotation.y -= movementX * 0.002;
+		// yawObject.rotation.y -= movementX * 0.002;
+     //    yawObject._dirtyRotation = true;
 		pitchObject.rotation.x -= movementY * 0.002;
 
 		pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
@@ -165,16 +173,21 @@ export default THREE.PointerLockControls = function ( camera ) {
 		}
 
 		yawObject.translateX( velocity.x );
-		yawObject.translateY( velocity.y ); 
+		// yawObject.translateY( velocity.y );
 		yawObject.translateZ( velocity.z );
 
 		if ( yawObject.position.y < 10 ) {
 
 			velocity.y = 0;
-			yawObject.position.y = 10;
+			// yawObject.position.y = 10;
 
 			canJump = true;
 
 		}
+
+        velocity.y = 0;
+        yawObject.setLinearVelocity(velocity);
+
+        yawObject._dirtyPosition = true;
 	};
 };
