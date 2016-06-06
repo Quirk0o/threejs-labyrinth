@@ -1,24 +1,24 @@
 import $ from 'jquery'
 import THREE from 'three.js'
-import THREEx from 'threex.windowresize'
-import KeyboardState from './components/TrackballControls/THREEx.KeyboardState'
-import './components/OrbitControls/OrbitControls'
-import './loaders/collada/ColladaLoader'
-import './loaders/collada/Animation'
-import './loaders/collada/AnimationHandler'
-import './loaders/collada/KeyFrameAnimation'
 import './lib/physi.js'
+import KeyboardState from './components/TrackballControls/KeyboardState.js'
+import WindowResize from './components/WindowResize/WindowResize'
+import './components/OrbitControls/OrbitControls'
+import './loaders/obj/OBJLoader'
+import './loaders/obj/MTLLoader'
 
 Physijs.scripts.worker = 'physijs_worker.js';
 Physijs.scripts.ammo = 'ammo.js';
 
-import './components/Map/Map'
+import { imgToMap } from './components/Map/Map'
 
 import './css/main.css'
 
 import heightmapTextureFile from './textures/heightmap.png'
 import floorTextureFile from './textures/wood-2.jpg'
-import modelFile from './models/idle/idle.dae'
+import modelFile from './models/stickFigure/Stick_Figure_by_Swp.DAE'
+import objFile from './models/stickFigure/Stick_Figure_by_Swp.OBJ'
+import mtlFile from './models/stickFigure/Stick_Figure_by_Swp.mtl'
 
 const FOV = 75,
     ANGLE = window.innerWidth / window.innerHeight,
@@ -27,14 +27,25 @@ const FOV = 75,
 
 let windowResize;
 
-let scene, camera, cameraBox, renderer;
+let scene, camera, renderer;
 let cube;
 let light, secondaryLight, ray;
 let controls, time = Date.now();
 let floor;
 let keyboard = new KeyboardState();
-let clock = new THREE.Clock();
-let collisions = [];
+
+// custom global variables
+let player;
+
+// the following code is from
+//    http://catchvar.com/threejs-animating-blender-models
+let animOffset       = 0,   // starting frame of animation
+    walking         = false,
+    duration        = 1000, // milliseconds to complete animation
+    keyframes       = 20,   // total number of animation frames
+    interpolation   = duration / keyframes, // milliseconds per frame
+    lastKeyframe    = 0,    // previous keyframe
+    currentKeyframe = 0;
 
 const body = $("body");
 
@@ -87,74 +98,16 @@ function init() {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    var lineGeometry = new THREE.Geometry();
-    lineGeometry.vertices.push(
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0, 1, 0)
-    );
-
-    var lineMaterial = new THREE.LineBasicMaterial({
-        color: 0xff0000
-    });
-
-    var crosshairLineHorizontal = new THREE.Line(lineGeometry, lineMaterial);
-    camera.add(crosshairLineHorizontal);
-    crosshairLineHorizontal.position.z = -10;
-
-    lineGeometry = new THREE.Geometry();
-    lineGeometry.vertices.push(
-        new THREE.Vector3(-0.5, 0.5, 0),
-        new THREE.Vector3(0.5, 0.5, 0)
-    );
-
-    lineMaterial = new THREE.LineBasicMaterial({
-        color: 0xff0000
-    });
-
-    var crosshairLineVertical = new THREE.Line(lineGeometry, lineMaterial);
-    camera.add(crosshairLineVertical);
-    crosshairLineVertical.position.z = -10;
-
     let heightmap = new Image();
-    let objects;
     heightmap.onload = function () {
-        let objects = THREE.ImgToMap(this);
+        let objects = imgToMap(this);
         for (let i = 0; i < objects.length; i++) {
             scene.add(objects[i]);
             objects[i].position.y = 0;
-            var bbox = new THREE.BoundingBoxHelper(objects[i], 0x0000ff);
-            bbox.update();
-            scene.add(bbox);
         }
     };
 
     heightmap.src = heightmapTextureFile;
-
-    var loader = new THREE.ColladaLoader();
-
-    loader.load(
-        // resource URL
-        modelFile,
-        // Function when resource is loaded
-        function ( collada ) {
-            var dae = collada.scene;
-            dae.traverse( function ( child ) {
-                if ( child instanceof THREE.SkinnedMesh ) {
-                    var animation = new THREE.Animation( child, child.geometry.animation );
-                    animation.play();
-                }
-            } );
-            dae.scale.x = dae.scale.y = dae.scale.z = 0.002;
-            dae.updateMatrix();
-
-            scene.add( dae );
-            dae.position.set(0, 0, -100);
-        },
-        // Function called when download progresses
-        function ( xhr ) {
-            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-        }
-    );
 
     let cubeGeometry = new THREE.CubeGeometry(10, 10, 10);
     let cubeMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x0000ff }));
@@ -163,12 +116,8 @@ function init() {
     cube.__dirtyPosition = true;
     scene.add(cube);
 
-    cube.addEventListener( 'collision', (other_object) => {
-        console.log('Collided with ', other_object);
-    });
-
     body.append(renderer.domElement);
-    windowResize = new THREEx.WindowResize(renderer, camera);
+    windowResize = new WindowResize(renderer, camera);
 }
 
 function animate() {
@@ -176,14 +125,6 @@ function animate() {
     update();
     scene.simulate();
     renderer.render(scene, camera);
-
-    // controls.isOnObject(false);
-
-    // ray.ray.origin.copy(controls.getObject().position);
-    // ray.ray.origin.y -= 10;
-
-    // controls.update(Date.now() - time);
-    // cameraBox.update();
 
     time = Date.now();
     requestAnimationFrame(animate);

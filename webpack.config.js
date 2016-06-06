@@ -1,10 +1,13 @@
 
+var path = require('path');
 var autoprefixer = require('autoprefixer');
 
 var HtmlWebpackPlugin = require('html-webpack-plugin');
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 var BowerWebpackPlugin = require("bower-webpack-plugin");
 
 module.exports = {
+    context: path.join(__dirname),
     entry:  './src',
     output: {
         path:     'dist',
@@ -12,7 +15,11 @@ module.exports = {
     },
     plugins: [
         new HtmlWebpackPlugin({ title: 'Three.js Labyrinth Game' }),
-        new BowerWebpackPlugin()
+        new BowerWebpackPlugin(),
+        new CopyWebpackPlugin([{
+            from: 'src/static',
+            flatten: true
+        }])
     ],
     module: {
         loaders: [
@@ -37,7 +44,7 @@ module.exports = {
                 ]
             },
             {
-                test: /\.dae/,
+                test: /\.(dae|obj|mtl)$/i,
                 loader: 'file'
             }
         ]

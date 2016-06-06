@@ -15,10 +15,7 @@
     "tests"
   ],
   "dependencies": {
-    "threex.colliders": "*",
     "jquery": "^2.2.3",
     "three.js": "threejs#*",
-    "threex.windowresize": "*",
-    "threex.skymap": "*"
   }
 }

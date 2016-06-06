@@ -1,6 +1,5 @@
 import THREE from 'three.js'
 import '../../lib/physi'
-// import THREEx from 'threex.colliders';
 
 function getPixelData(img) {
 
@@ -29,7 +28,7 @@ function getPixelData(img) {
     return data;
 }
 
-THREE.ImgToMap = function (img) {
+export function imgToMap (img) {
     const imgData = getPixelData(img);
 
     for (var i = 0; i < imgData.length, imgData[i] < 0.5; i++);
@@ -145,6 +144,4 @@ function createObject(width, height, depth, x, z) {
     cube.castShadow = true;
     return cube;
 }
-
-export default THREE.ImgToMap;
 
