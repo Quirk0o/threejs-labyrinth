@@ -15,7 +15,8 @@ import { imgToMap } from './components/Map/Map'
 import './css/main.css'
 
 import heightmapTextureFile from './textures/heightmap.png'
-import floorTextureFile from './textures/wood-2.jpg'
+import floorTextureFile from './textures/stone.jpg'
+import floorBumpMapFile from './textures/stone-bump.jpg'
 import modelFile from './models/stickFigure/Stick_Figure_by_Swp.DAE'
 import objFile from './models/stickFigure/Stick_Figure_by_Swp.OBJ'
 import mtlFile from './models/stickFigure/Stick_Figure_by_Swp.mtl'
@@ -55,7 +56,7 @@ animate();
 function init() {
     scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -10, 0));
-    scene.fog = new THREE.Fog(0xffffff);
+    scene.fog = new THREE.Fog(0x000000);
     scene.addEventListener(
         'update',
         function () {
@@ -74,7 +75,7 @@ function init() {
 
     controls = new THREE.OrbitControls(camera);
 
-    light = new THREE.DirectionalLight(0xf9bd62, 1.5);
+    light = new THREE.DirectionalLight(0xD9DCFA, 1.5);
     light.position.set(1, 1, 1);
     scene.add(light);
 
@@ -90,8 +91,13 @@ function init() {
     floorTexture.wrapT = THREE.RepeatWrapping;
     floorTexture.repeat.set( 20, 20 );
 
+    let floorBumpMap = THREE.ImageUtils.loadTexture(floorBumpMapFile);
+    floorTexture.wrapS = THREE.RepeatWrapping;
+    floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set( 20, 20 );
+
     let floorMaterial = Physijs.createMaterial(
-        new THREE.MeshPhongMaterial({ map: floorTexture, side: THREE.DoubleSide  }),
+        new THREE.MeshPhongMaterial({ map: floorTexture, bumpMap: floorBumpMap, shininess: 0, side: THREE.DoubleSide  }),
         .9, .3);
 
     floor = new Physijs.BoxMesh(new THREE.CubeGeometry(2000, 1, 2000), floorMaterial, 0);
@@ -103,7 +109,10 @@ function init() {
         let objects = imgToMap(this);
         for (let i = 0; i < objects.length; i++) {
             scene.add(objects[i]);
+            objects[i].translateX(-600);
+            objects[i].translateZ(-690);
             objects[i].position.y = 0;
+            objects[i].__dirtyPosition = true;
         }
     };
 
@@ -111,8 +120,8 @@ function init() {
 
     let cubeGeometry = new THREE.CubeGeometry(10, 10, 10);
     let cubeMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x0000ff }));
-    cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 100);
-    cube.position.set(0, 5, -100);
+    cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1000);
+    cube.position.set(0, 10, -100);
     cube.__dirtyPosition = true;
     scene.add(cube);
 

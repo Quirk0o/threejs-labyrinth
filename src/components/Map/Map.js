@@ -1,6 +1,9 @@
 import THREE from 'three.js'
 import '../../lib/physi'
 
+import textureFile from '../../textures/stone.jpg'
+import bumpMapFile from '../../textures/stone-bump.jpg'
+
 function getPixelData(img) {
 
     const canvas = document.createElement('canvas');
@@ -133,8 +136,16 @@ export function imgToMap (img) {
 
 function createObject(width, height, depth, x, z) {
     let geometry = new THREE.BoxGeometry(width, height, depth);
+    let map = THREE.ImageUtils.loadTexture(textureFile);
+    map.wrapS = THREE.RepeatWrapping;
+    map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set( (width > depth ? width : depth) / 32, height / 32 );
+    let bumpMap = THREE.ImageUtils.loadTexture(bumpMapFile);
+    bumpMap.wrapS = THREE.RepeatWrapping;
+    bumpMap.wrapT = THREE.RepeatWrapping;
+    bumpMap.repeat.set( (width > depth ? width : depth) / 32, height / 32 );
     let material = Physijs.createMaterial(
-        new THREE.MeshBasicMaterial({color: 0x000000}),
+        new THREE.MeshPhongMaterial({ map, bumpMap, bumpScale: 0.2, side: THREE.DoubleSide }),
         .8,
         .3);
     let cube = new Physijs.BoxMesh(geometry, material, 0);
