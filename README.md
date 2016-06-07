@@ -19,6 +19,9 @@ npm start
 webpack
 ```
 
+## Usage
+Use W, S, A, D keys to walk around.
+
 ## Goal of the project
 
 The goal of this project was to create a Three.js scene that would load 
