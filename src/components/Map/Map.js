@@ -79,9 +79,9 @@ export function imgToMap (img) {
             return { a, b };
         });
         walls.forEach((wall) => {
-            let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 20 : 20;
+            let width = wall.a.x != wall.b.x ? Math.abs(wall.a.x - wall.b.x) * 10 + 18 : 20;
             let heigth = 80;
-            let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 20: 20;
+            let depth = wall.a.y != wall.b.y ? Math.abs(wall.a.y - wall.b.y) * 10 + 18: 20;
             let vec = { x: (wall.a.x - wall.b.x)/2, y: (wall.a.y - wall.b.y)/2 };
            objects.push(createObject(width, heigth, depth, wall.a.x - vec.x, wall.a.y - vec.y));
         });
