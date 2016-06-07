@@ -44,7 +44,7 @@ module.exports = {
                 ]
             },
             {
-                test: /\.(dae|obj|mtl)$/i,
+                test: /\.(dae|obj|mtl|json)$/i,
                 loader: 'file'
             }
         ]

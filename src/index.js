@@ -4,8 +4,12 @@ import './lib/physi.js'
 import KeyboardState from './components/TrackballControls/KeyboardState.js'
 import WindowResize from './components/WindowResize/WindowResize'
 import './components/OrbitControls/OrbitControls'
-import './loaders/obj/OBJLoader'
-import './loaders/obj/MTLLoader'
+// import './loaders/collada/ColladaLoader'
+import './loaders/collada/Animation'
+import './loaders/collada/AnimationHandler'
+import './loaders/collada/KeyFrameAnimation'
+// import './loaders/obj/OBJLoader'
+// import './loaders/obj/MTLLoader'
 
 Physijs.scripts.worker = 'physijs_worker.js';
 Physijs.scripts.ammo = 'ammo.js';
@@ -17,9 +21,8 @@ import './css/main.css'
 import heightmapTextureFile from './textures/heightmap.png'
 import floorTextureFile from './textures/stone.jpg'
 import floorBumpMapFile from './textures/stone-bump.jpg'
-import modelFile from './models/stickFigure/Stick_Figure_by_Swp.DAE'
-import objFile from './models/stickFigure/Stick_Figure_by_Swp.OBJ'
-import mtlFile from './models/stickFigure/Stick_Figure_by_Swp.mtl'
+import colladaFile from './models/dude/dude.dae'
+import playerAnimation from './models/dude/dude.json'
 
 const FOV = 75,
     ANGLE = window.innerWidth / window.innerHeight,
@@ -43,10 +46,11 @@ let player;
 let animOffset       = 0,   // starting frame of animation
     walking         = false,
     duration        = 1000, // milliseconds to complete animation
-    keyframes       = 20,   // total number of animation frames
+    keyframes       = 29,   // total number of animation frames
     interpolation   = duration / keyframes, // milliseconds per frame
     lastKeyframe    = 0,    // previous keyframe
     currentKeyframe = 0;
+let animation;
 
 const body = $("body");
 
@@ -118,10 +122,23 @@ function init() {
 
     heightmap.src = heightmapTextureFile;
 
+    var jsonLoader = new THREE.JSONLoader();
+    jsonLoader.load( playerAnimation, (model, materials) => {
+        for (var i = 0; i < materials.length; i++)
+            materials[i].morphTargets = true;
+
+        var material = new THREE.MeshFaceMaterial( materials );
+        player = new THREE.Mesh( model, material );
+        player.scale.set(10,10,10);
+        player.position.set(0, 10, 0);
+        scene.add( player );
+        
+    } );
+
     let cubeGeometry = new THREE.CubeGeometry(10, 10, 10);
     let cubeMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x0000ff }));
     cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1000);
-    cube.position.set(0, 10, -100);
+    cube.position.set(0, 10, 0);
     cube.__dirtyPosition = true;
     scene.add(cube);
 
@@ -130,6 +147,25 @@ function init() {
 }
 
 function animate() {
+
+    if ( player ) // exists / is loaded
+    {
+        // Alternate morph targets
+        time = new Date().getTime() % duration;
+        let keyframe = Math.floor( time / interpolation ) + animOffset;
+        if ( keyframe != currentKeyframe )
+        {
+            player.morphTargetInfluences[ lastKeyframe ] = 0;
+            player.morphTargetInfluences[ currentKeyframe ] = 1;
+            player.morphTargetInfluences[ keyframe ] = 0;
+            lastKeyframe = currentKeyframe;
+            currentKeyframe = keyframe;
+        }
+        player.morphTargetInfluences[ keyframe ] =
+            ( time % interpolation ) / interpolation;
+        player.morphTargetInfluences[ lastKeyframe ] =
+            1 - player.morphTargetInfluences[ keyframe ];
+    }
 
     update();
     scene.simulate();
