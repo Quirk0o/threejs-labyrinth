@@ -4,12 +4,9 @@ import './lib/physi.js'
 import KeyboardState from './components/TrackballControls/KeyboardState.js'
 import WindowResize from './components/WindowResize/WindowResize'
 import './components/OrbitControls/OrbitControls'
-// import './loaders/collada/ColladaLoader'
 import './loaders/collada/Animation'
 import './loaders/collada/AnimationHandler'
 import './loaders/collada/KeyFrameAnimation'
-// import './loaders/obj/OBJLoader'
-// import './loaders/obj/MTLLoader'
 
 Physijs.scripts.worker = 'physijs_worker.js';
 Physijs.scripts.ammo = 'ammo.js';
@@ -21,7 +18,6 @@ import './css/main.css'
 import heightmapTextureFile from './textures/heightmap.png'
 import floorTextureFile from './textures/stone.jpg'
 import floorBumpMapFile from './textures/stone-bump.jpg'
-import colladaFile from './models/dude/dude.dae'
 import playerAnimation from './models/dude/dude.json'
 
 const FOV = 75,
@@ -39,7 +35,8 @@ let floor;
 let keyboard = new KeyboardState();
 
 // custom global variables
-let player;
+let walls = [];
+let player, capsule, bbox;
 
 // the following code is from
 //    http://catchvar.com/threejs-animating-blender-models
@@ -112,9 +109,10 @@ function init() {
     heightmap.onload = function () {
         let objects = imgToMap(this);
         for (let i = 0; i < objects.length; i++) {
+            walls = objects;
             scene.add(objects[i]);
             objects[i].translateX(-600);
-            objects[i].translateZ(-690);
+            objects[i].translateZ(-500);
             objects[i].position.y = 0;
             objects[i].__dirtyPosition = true;
         }
@@ -129,18 +127,23 @@ function init() {
 
         var material = new THREE.MeshFaceMaterial( materials );
         player = new THREE.Mesh( model, material );
-        player.scale.set(10,10,10);
-        player.position.set(0, 10, 0);
-        scene.add( player );
-        
-    } );
+        player.scale.set(2,2,2);
+        player.position.set(0,0,0);
+        player.rotation.y = Math.PI;
 
-    let cubeGeometry = new THREE.CubeGeometry(10, 10, 10);
-    let cubeMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial({ color: 0x0000ff }));
-    cube = new Physijs.BoxMesh(cubeGeometry, cubeMaterial, 1000);
-    cube.position.set(0, 10, 0);
-    cube.__dirtyPosition = true;
-    scene.add(cube);
+        bbox = new THREE.BoundingBoxHelper(player, 0x0000ff);
+        bbox.update();
+        let capsuleGeometry = bbox.geometry;
+        let capsuleMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial(
+            { color: 0x0000ff, transparent: true, opacity: 0.5 }),
+            .6,
+            .3);
+        capsule = new Physijs.BoxMesh(capsuleGeometry, capsuleMaterial, 1000);
+        scene.add(capsule);
+        capsule.add(player);
+        capsule.position.y = 20;
+        capsule.__dirtyPostion = true;
+    } );
 
     body.append(renderer.domElement);
     windowResize = new WindowResize(renderer, camera);
@@ -148,7 +151,7 @@ function init() {
 
 function animate() {
 
-    if ( player ) // exists / is loaded
+    if ( player && walking ) // exists / is loaded
     {
         // Alternate morph targets
         time = new Date().getTime() % duration;
@@ -176,50 +179,63 @@ function animate() {
 
 }
 
+var line;
 function update()
 {
-    var moveDistance = 200; // 200 pixels per second
+    var moveDistance = 25; // 25 pixels per second
     var rotateAngle = Math.PI / 2;   // pi/2 radians (90 degrees) per second
 
     // local transformations
 
-    let direction = new THREE.Vector3(0, 0, 1);
-    let linearVelocity = new THREE.Vector3(0, 0, 0);
-    let angularVelocity = new THREE.Vector3(0, 0, 0);
-    // move forwards/backwards/left/right
-    if ( keyboard.pressed("W") ) {
-        direction = new THREE.Vector3(0, 0, -1);
-        linearVelocity.setZ(moveDistance);
-    }
-    if ( keyboard.pressed("S") ) {
-        direction = new THREE.Vector3(0, 0, 1);
-        linearVelocity.setZ(-moveDistance);
-    }
+    if (capsule) {
 
-    // rotate left/right/up/down
-    var rotation_matrix = new THREE.Matrix4().identity();
-    if ( keyboard.pressed("A") )
-        angularVelocity.setY(rotateAngle);
+        let forward = new THREE.Vector3(0, 0, 1);
+        let linearVelocity = new THREE.Vector3(0, 0, 0);
+        let angularVelocity = new THREE.Vector3(0, 0, 0);
+        // move forwards/backwards/left/right
+        if (keyboard.pressed("W")) {
+            forward = new THREE.Vector3(0, 0, -1);
+            linearVelocity.setZ(moveDistance);
+        }
+        if (keyboard.pressed("S")) {
+            forward = new THREE.Vector3(0, 0, 1);
+            linearVelocity.setZ(-moveDistance);
+        }
+
+        // rotate left/right/up/down
+        var rotation_matrix = new THREE.Matrix4().identity();
+        if (keyboard.pressed("A"))
+            angularVelocity.setY(rotateAngle);
         // cube.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
-    if ( keyboard.pressed("D") )
-        angularVelocity.setY(-rotateAngle);
+        if (keyboard.pressed("D"))
+            angularVelocity.setY(-rotateAngle);
         // cube.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
 
-    var matrix = new THREE.Matrix4();
-    matrix.extractRotation( cube.matrix );
-    direction.applyMatrix4(matrix);
+        var matrix = new THREE.Matrix4();
+        matrix.extractRotation(capsule.matrix);
+        forward.applyMatrix4(matrix);
 
-    // console.log(direction);)
-    linearVelocity = direction.multiplyScalar(linearVelocity.length());
-    cube.setLinearVelocity(linearVelocity);
-    cube.setAngularVelocity(angularVelocity);
+        // console.log(direction);)
+        linearVelocity = forward.multiplyScalar(linearVelocity.length());
+        capsule.setLinearVelocity(linearVelocity);
+        capsule.setAngularVelocity(angularVelocity);
 
-    var relativeCameraOffset = new THREE.Vector3(0,20,50);
+        if (linearVelocity.length() > 0) {
+            walking = true;
+        } else {
+            walking = false;
+        }
 
-    var cameraOffset = relativeCameraOffset.applyMatrix4( cube.matrixWorld );
+        var relativeCameraOffset = new THREE.Vector3(0, 20, 20);
 
-    camera.position.x = cameraOffset.x;
-    camera.position.y = cameraOffset.y;
-    camera.position.z = cameraOffset.z;
-    camera.lookAt( cube.position );
+        var cameraOffset = relativeCameraOffset.applyMatrix4(capsule.matrixWorld);
+
+        var lookAt = new THREE.Vector3(0, 0, 0).copy(capsule.position);
+        lookAt.y += 15;
+
+        camera.position.x = cameraOffset.x;
+        camera.position.y = cameraOffset.y;
+        camera.position.z = cameraOffset.z;
+        camera.lookAt(lookAt);
+    }
 }
