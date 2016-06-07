@@ -7,6 +7,7 @@ import './components/OrbitControls/OrbitControls'
 import './loaders/collada/Animation'
 import './loaders/collada/AnimationHandler'
 import './loaders/collada/KeyFrameAnimation'
+import './loaders/tga/TGALoader'
 
 Physijs.scripts.worker = 'physijs_worker.js';
 Physijs.scripts.ammo = 'ammo.js';
@@ -77,12 +78,13 @@ function init() {
     controls = new THREE.OrbitControls(camera);
 
     light = new THREE.DirectionalLight(0xD9DCFA, 1.5);
-    light.position.set(1, 1, 1);
+    light.castShadow = true;
+    light.position.set(100, 40, 100);
+
     scene.add(light);
 
-    secondaryLight = new THREE.DirectionalLight(0xffffff, 0.75);
-    secondaryLight.position.set(-1, -0.5, -1);
-    scene.add(secondaryLight);
+    var ambientLight = new THREE.AmbientLight(0x103048, 0.5);
+    scene.add(ambientLight);
 
     ray = new THREE.Raycaster();
     ray.ray.direction.set(0, -1, 0);
@@ -101,7 +103,7 @@ function init() {
         new THREE.MeshPhongMaterial({ map: floorTexture, bumpMap: floorBumpMap, shininess: 0, side: THREE.DoubleSide  }),
         .9, .3);
 
-    floor = new Physijs.BoxMesh(new THREE.CubeGeometry(2000, 1, 2000), floorMaterial, 0);
+    floor = new Physijs.BoxMesh(new THREE.CubeGeometry(2500, 1, 2500), floorMaterial, 0);
     floor.receiveShadow = true;
     scene.add(floor);
 
@@ -112,7 +114,7 @@ function init() {
             walls = objects;
             scene.add(objects[i]);
             objects[i].translateX(-600);
-            objects[i].translateZ(-500);
+            objects[i].translateZ(-600);
             objects[i].position.y = 0;
             objects[i].__dirtyPosition = true;
         }
@@ -120,18 +122,20 @@ function init() {
 
     heightmap.src = heightmapTextureFile;
 
-    var jsonLoader = new THREE.JSONLoader();
+    let jsonLoader = new THREE.JSONLoader();
     jsonLoader.load( playerAnimation, (model, materials) => {
-        for (var i = 0; i < materials.length; i++)
+        for (let i = 0; i < materials.length; i++)
             materials[i].morphTargets = true;
 
-        var material = new THREE.MeshFaceMaterial( materials );
+        let material = new THREE.MeshFaceMaterial( materials );
         player = new THREE.Mesh( model, material );
         player.scale.set(2,2,2);
         player.position.set(0,0,0);
+        player.castShadow = true;
+        player.receiveShadow = true;
         player.rotation.y = Math.PI;
 
-        bbox = new THREE.BoundingBoxHelper(player, 0x0000ff);
+        bbox = new THREE.BoundingBoxHelper(player, 0x000000);
         bbox.update();
         let capsuleGeometry = bbox.geometry;
         let capsuleMaterial = Physijs.createMaterial(new THREE.MeshBasicMaterial(
@@ -144,6 +148,40 @@ function init() {
         capsule.position.y = 20;
         capsule.__dirtyPostion = true;
     } );
+
+    let imagePrefix = 'miramar_';
+    let imageExtension = '.png';
+    let urls = [
+        imagePrefix + 'xpos' + imageExtension,
+        imagePrefix + 'xneg' + imageExtension,
+        imagePrefix + 'ypos' + imageExtension,
+        imagePrefix + 'yneg' + imageExtension,
+        imagePrefix + 'zpos' + imageExtension,
+        imagePrefix + 'zneg' + imageExtension
+    ];
+    window.cubemap = THREE.ImageUtils.loadTextureCube(urls, undefined, function() {
+
+        cubemap.format = THREE.RGBFormat;
+        window.shader = THREE.ShaderLib['cube'];
+        shader.uniforms['tCube'].value = cubemap;
+
+        window.skyBoxMaterial = new THREE.ShaderMaterial( {
+            fragmentShader: shader.fragmentShader,
+            vertexShader: shader.vertexShader,
+            uniforms: shader.uniforms,
+            depthWrite: false,
+            side: THREE.BackSide
+        });
+
+        window.skybox = new THREE.Mesh(
+            new THREE.BoxGeometry(1000, 1000, 1000),
+            skyBoxMaterial
+        );
+
+        scene.add(skybox);
+        skybox.position.set(-200, 200, -200);
+
+    });
 
     body.append(renderer.domElement);
     windowResize = new WindowResize(renderer, camera);
@@ -179,11 +217,10 @@ function animate() {
 
 }
 
-var line;
 function update()
 {
-    var moveDistance = 25; // 25 pixels per second
-    var rotateAngle = Math.PI / 2;   // pi/2 radians (90 degrees) per second
+    let moveDistance = 25; // 25 pixels per second
+    let rotateAngle = Math.PI / 2;   // pi/2 radians (90 degrees) per second
 
     // local transformations
 
@@ -203,7 +240,7 @@ function update()
         }
 
         // rotate left/right/up/down
-        var rotation_matrix = new THREE.Matrix4().identity();
+        let rotation_matrix = new THREE.Matrix4().identity();
         if (keyboard.pressed("A"))
             angularVelocity.setY(rotateAngle);
         // cube.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
@@ -211,7 +248,7 @@ function update()
             angularVelocity.setY(-rotateAngle);
         // cube.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
 
-        var matrix = new THREE.Matrix4();
+        let matrix = new THREE.Matrix4();
         matrix.extractRotation(capsule.matrix);
         forward.applyMatrix4(matrix);
 
@@ -226,12 +263,12 @@ function update()
             walking = false;
         }
 
-        var relativeCameraOffset = new THREE.Vector3(0, 20, 20);
+        let relativeCameraOffset = new THREE.Vector3(0, 15, 25);
 
-        var cameraOffset = relativeCameraOffset.applyMatrix4(capsule.matrixWorld);
+        let cameraOffset = relativeCameraOffset.applyMatrix4(capsule.matrixWorld);
 
-        var lookAt = new THREE.Vector3(0, 0, 0).copy(capsule.position);
-        lookAt.y += 15;
+        let lookAt = new THREE.Vector3(0, 0, 0).copy(capsule.position);
+        lookAt.y += 10;
 
         camera.position.x = cameraOffset.x;
         camera.position.y = cameraOffset.y;
