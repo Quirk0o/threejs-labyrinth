@@ -20,6 +20,11 @@ webpack
 ## Usage
 Use `W`, `S`, `A`, `D` keys to walk around.
 
+## Important files
+The entry point for the project is the file `src/index.js` which initializes and renders the scene as well as starting the animation.
+
+An important file is located in `src/components/Map/Map.js` - it contains the logic for parsing the heightmap file into wall objects for the labyrinth.
+
 ## Goal of the project
 
 The goal of this project was to create a Three.js scene that would load 
